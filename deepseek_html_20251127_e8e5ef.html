@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Nutrition Calculator</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 10px; }
+        .food-item { margin: 10px 0; }
+        input, button { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #4CAF50; color: white; cursor: pointer; }
+        .result { background: white; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .nutrient { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍎 AI Nutrition Calculator</h1>
+        <p>Calculate calories, protein, fiber and more for your meals!</p>
+        
+        <div id="food-inputs">
+            <div class="food-item">
+                <input type="text" placeholder="Food item (e.g., Chapati)" class="food-name">
+                <input type="number" placeholder="Quantity (grams)" class="food-quantity" value="100">
+                <button onclick="removeFood(this)">❌</button>
+            </div>
+        </div>
+        
+        <button onclick="addFood()">➕ Add Food</button>
+        <button onclick="calculateNutrition()">🧮 Calculate Nutrition</button>
+        
+        <div id="results" class="result" style="display: none;">
+            <h3>📊 Nutrition Results</h3>
+            <div id="nutrition-data"></div>
+        </div>
+    </div>
+
+    <script>
+        function addFood() {
+            const container = document.getElementById('food-inputs');
+            const newFood = document.createElement('div');
+            newFood.className = 'food-item';
+            newFood.innerHTML = `
+                <input type="text" placeholder="Food item (e.g., Chapati)" class="food-name">
+                <input type="number" placeholder="Quantity (grams)" class="food-quantity" value="100">
+                <button onclick="removeFood(this)">❌</button>
+            `;
+            container.appendChild(newFood);
+        }
+
+        function removeFood(button) {
+            if (document.querySelectorAll('.food-item').length > 1) {
+                button.parentElement.remove();
+            }
+        }
+
+        async function calculateNutrition() {
+            const foodItems = {};
+            const foodInputs = document.querySelectorAll('.food-item');
+            
+            foodInputs.forEach(item => {
+                const name = item.querySelector('.food-name').value.trim();
+                const quantity = parseInt(item.querySelector('.food-quantity').value);
+                if (name && quantity > 0) {
+                    foodItems[name] = quantity;
+                }
+            });
+
+            if (Object.keys(foodItems).length === 0) {
+                alert('Please add at least one food item!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ food_items: foodItems })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayResults(result.nutrition);
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error calculating nutrition: ' + error);
+            }
+        }
+
+        function displayResults(nutrition) {
+            const resultsDiv = document.getElementById('results');
+            const nutritionDiv = document.getElementById('nutrition-data');
+            
+            nutritionDiv.innerHTML = `
+                <div class="nutrient">🔥 Calories: ${nutrition.calories.toFixed(1)} kcal</div>
+                <div class="nutrient">🥩 Protein: ${nutrition.protein.toFixed(1)}g</div>
+                <div class="nutrient">🍚 Carbs: ${nutrition.carbs.toFixed(1)}g</div>
+                <div class="nutrient">🥑 Fat: ${nutrition.fat.toFixed(1)}g</div>
+                <div class="nutrient">🌾 Fiber: ${nutrition.fiber.toFixed(1)}g</div>
+            `;
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        // Add first food item on load
+        addFood();
+    </script>
+</body>
+</html>
